@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Production and recruiting dashboard (synced)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#13294B;--navy-2:#1E3A66;--gold:#B8901F;--gold-soft:#F4EAD0;
+  --paper:#FBFAF7;--card:#FFFFFF;--ink:#16202E;--muted:#5D6675;--faint:#8B93A1;--line:#E4E1D8;
+  --paid:#1F7A55;--paid-bg:#E3F2EA;--sub:#9A6A0B;--sub-bg:#FBF0D9;--proj:#4B5970;--proj-bg:#EDF0F5;
+  --danger:#A63A2B;--danger-bg:#F9E6E2;
+  --serif:"Fraunces",Georgia,"Times New Roman",serif;--sans:"IBM Plex Sans",-apple-system,"Segoe UI",Roboto,sans-serif;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --navy:#9DB6E0;--navy-2:#C5D5EF;--gold:#D9B44A;--gold-soft:#3A3220;
+  --paper:#0F141C;--card:#171E29;--ink:#E8EBF0;--muted:#A3ABB8;--faint:#7A8392;--line:#2A3342;
+  --paid:#6CCB9F;--paid-bg:#17342A;--sub:#E7B95A;--sub-bg:#3A2E15;--proj:#AEB9CB;--proj-bg:#242D3B;--danger:#F09482;--danger-bg:#3E1F1A;}}
+:root[data-theme="dark"]{
+  --navy:#9DB6E0;--navy-2:#C5D5EF;--gold:#D9B44A;--gold-soft:#3A3220;
+  --paper:#0F141C;--card:#171E29;--ink:#E8EBF0;--muted:#A3ABB8;--faint:#7A8392;--line:#2A3342;
+  --paid:#6CCB9F;--paid-bg:#17342A;--sub:#E7B95A;--sub-bg:#3A2E15;--proj:#AEB9CB;--proj-bg:#242D3B;--danger:#F09482;--danger-bg:#3E1F1A;}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1120px;margin:0 auto;padding:20px 20px 60px}
+.num{font-variant-numeric:tabular-nums}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;padding-bottom:16px;border-bottom:2px solid var(--navy)}
+h1{font-family:var(--serif);font-weight:600;font-size:28px;margin:0;color:var(--navy);letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px;margin:2px 0 0}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tab{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:8px;font:500 14px var(--sans);cursor:pointer}
+.tab.on{background:var(--navy);color:var(--paper);border-color:var(--navy)}
+.tab small{display:block;font-weight:400;font-size:11px;opacity:.75}
+select,input{font:14px var(--sans);color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-width:0}
+input[type=number]{width:100%}
+button{font:500 13px var(--sans);cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 12px}
+button:hover{border-color:var(--faint)}
+button.pri{background:var(--navy);color:var(--paper);border-color:var(--navy)}
+button.ghost{border-color:transparent;background:transparent;color:var(--muted);padding:4px 6px}
+button.ghost:hover{color:var(--danger)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:28px;padding:26px 0 22px;border-bottom:1px solid var(--line)}
+.big{font-family:var(--serif);font-size:56px;line-height:1;font-weight:600;color:var(--navy);letter-spacing:-.02em}
+.big-l{font-size:13px;color:var(--muted);margin-bottom:6px}
+.vs{margin-top:10px;color:var(--muted);font-size:14px}
+.vs b{color:var(--ink);font-weight:600}
+.bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--line);margin:16px 0 8px}
+.bar i{display:block;height:100%}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:0}
+.streams{display:grid;gap:0}
+.stream{display:grid;grid-template-columns:1fr auto auto;gap:4px 14px;padding:10px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.stream:last-child{border-bottom:0}
+.stream .n{font-weight:600}
+.stream .p{font-size:12px;color:var(--muted);grid-column:1/-1}
+.carry{display:flex;gap:10px;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid var(--line);font-size:13px}
+.chip{background:var(--gold-soft);color:var(--ink);padding:6px 10px;border-radius:6px}
+.chip.in{background:var(--proj-bg)}
+section{padding:26px 0 6px}
+.sh{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+h2{font-family:var(--serif);font-weight:600;font-size:21px;margin:0;color:var(--navy)}
+.hint{font-size:12px;color:var(--muted)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:760px}
+th{font-weight:500;font-size:12px;color:var(--muted);text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right}
+tfoot td{font-weight:600;background:var(--paper)}
+td input,td select{width:100%}
+.st{border:0;font-weight:500;border-radius:5px;padding:5px 8px}
+.st-paid{background:var(--paid-bg);color:var(--paid)}
+.st-submitted{background:var(--sub-bg);color:var(--sub)}
+.st-projected{background:var(--proj-bg);color:var(--proj)}
+.st-lost{background:var(--danger-bg);color:var(--danger);text-decoration:line-through}
+tr.lost td{opacity:.55}
+.trow{display:grid;grid-template-columns:minmax(120px,1.4fr) 90px minmax(140px,1.4fr) auto;gap:8px;align-items:center;margin-bottom:8px}
+.moved{font-size:11px;color:var(--gold);display:block}
+.add{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:10px;padding:12px;border:1px dashed var(--line);border-radius:10px}
+.add label{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px}
+.tiers{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.tier{border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px;background:var(--card)}
+.tier.hit{border-color:var(--gold);background:var(--gold-soft)}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 16px;font-size:14px}
+.kv span:nth-child(odd){color:var(--muted)}
+.rec{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.rc{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--card);display:flex;flex-direction:column;gap:6px}
+.rc .top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.rc b{font-weight:600}
+.flag{font-size:11px;color:var(--muted)}
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.col{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.colh{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--navy);padding:2px 4px}
+@media (max-width:860px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.board{grid-template-columns:1fr}}
+.goal{font-family:var(--serif);font-size:30px;color:var(--navy);font-weight:600}
+#help{display:none;border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-top:18px;background:var(--card);max-width:760px}
+#help.open{display:block}
+#help h3{font-family:var(--serif);font-weight:600;font-size:16px;margin:18px 0 6px;color:var(--navy)}
+#help p,#help li{font-size:14px;color:var(--ink)}
+#help ol,#help ul{padding-left:20px;margin:6px 0}
+.welcome{border:1px solid var(--gold);background:var(--gold-soft);border-radius:12px;padding:16px 18px;margin-top:20px}
+#settings{display:none;border:1px solid var(--gold);border-radius:12px;padding:18px;margin-top:18px;background:var(--card)}
+#settings.open{display:block}
+#settings h3{font-family:var(--serif);font-weight:600;font-size:16px;margin:16px 0 8px;color:var(--navy)}
+.srow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.srow label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.trend svg{width:100%;height:auto;display:block}
+.msg{padding:40px 0;color:var(--muted)}
+.closed-note{font-size:12px;color:var(--paid);margin-top:6px}
+.warn{color:var(--sub)}
+@media (max-width:760px){.hero,.grid2{grid-template-columns:1fr}.big{font-size:44px}}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:width .4s ease}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Production and recruiting</h1>
+    <p class="sub" id="who">Personal and team cashflow</p>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</header>
+<div id="settings"></div>
+<div id="help"></div>
+<main id="app"><p class="msg">Loading your data…</p></main>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+async function saveFile(name,data,type){if(dl){try{await dl.save({filename:name,data});}catch(err){if(err.code!=="declined")alert("Couldn't save the file.")}return}
+  try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}catch(e){alert("Couldn't save the file.")}}
+function ask(m){const t=Date.now();let r=false;try{r=confirm(m)}catch(e){return true}return r||Date.now()-t<40}
+const fmt=v=>(v<0?"-$":"$")+Math.round(Math.abs(v)).toLocaleString("en-CA");
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const now=new Date();const CUR=now.getFullYear()+"-"+pad(now.getMonth()+1);
+const addM=(m,n)=>{let[y,mo]=m.split("-").map(Number);mo+=n;while(mo>12){mo-=12;y++}while(mo<1){mo+=12;y--}return y+"-"+pad(mo)};
+const MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const lbl=m=>{const[y,mo]=m.split("-");return MN[+mo-1]+" "+y};
+const shortL=m=>MN[+m.split("-")[1]-1];
+const DEF={name:"",base:36,gens:[12,5.5,3,2,1,0.5],mult:12,wl:1.3,ul:1.98,inv:3,levels:[{n:"New trainee",p:26},{n:"Associate",p:36},{n:"Marketing director",p:51},{n:"Senior marketing director",p:66}],tiers:[],tiersConfirmed:false,bonusBasis:"paid",bonusPersonal:true};
+const STAGES=["prospect","interview","signed","studying","licensed","producing"];
+const STAGE_L={prospect:"Prospect",interview:"Interview",signed:"Signed",studying:"Studying",licensing:"Studying",licensed:"Licensed",producing:"Producing"};
+const GROUPS=[["Recruited",["prospect","interview","signed"]],["Studying",["studying","licensing"]],["Licensed",["licensed"]],["Producing",["producing"]]];
+let db=null,dl=null,S=DEF,cases=[],team=[],recruits=[],months={},view=CUR,canWrite=true;
+
+const set=()=>({...DEF,...S});
+function sc(c){const s=set();const a=+c.amount||0;if(c.product==="WL")return a*s.mult*(c.factor??s.wl);if(c.product==="UL")return a*s.mult*(c.factor??s.ul);return a*((c.rate??s.inv)/100)}
+function cashMonth(c){const m=c.payMonth||c.month;if(c.status==="paid"||c.status==="lost")return m;return m<CUR?CUR:m}
+function member(id){return team.find(t=>t.id===id)}
+function effLevel(id){let lv=0,cur=member(id),seen=new Set();while(cur&&!seen.has(cur.id)){seen.add(cur.id);lv=Math.max(lv,+cur.level||0);if(!cur.upline||cur.upline==="me")break;cur=member(cur.upline)}return lv}
+function chainName(id){const m=member(id);if(!m||!m.upline||m.upline==="me")return "direct";const u=member(m.upline);return u?"under "+u.name:"direct"}
+function genIndex(id){const b=set().base;let n=0,cur=member(id),seen=new Set();while(cur&&!seen.has(cur.id)){seen.add(cur.id);if((+cur.level||0)>=b)n++;if(!cur.upline||cur.upline==="me")break;cur=member(cur.upline)}return n}
+function spreadFor(id){const s=set();const g=genIndex(id);if(g>0)return +(s.gens[g-1]??0);return Math.max(0,s.base-effLevel(id))}
+const ORD=["1st","2nd","3rd","4th","5th","6th","7th","8th"];
+const genLabel=id=>{const g=genIndex(id);return g?ORD[g-1]+" gen":""};
+const isGen=id=>genIndex(id)>0;
+function rateOf(c){const s=set();if(!c.owner||c.owner==="me")return s.base;if(c.status==="paid"&&c.ovr!=null)return c.ovr;if(c.status==="paid"&&c.lvl!=null)return c.lvl>=s.base?+(s.gens[0]??0):Math.max(0,s.base-c.lvl);return spreadFor(c.owner)}
+const byName=(a,b,k="client")=>String(a[k]||"").localeCompare(String(b[k]||""),"en",{sensitivity:"base"});
+const inc=c=>sc(c)*rateOf(c)/100;
+function tierPct(v){let p=0;for(const t of [...set().tiers].sort((a,b)=>a.min-b.min))if(v>=t.min)p=t.pct;return p}
+
+function earned(M){
+  const s=set();let volAll=0,volPaid=0;
+  for(const c of cases){if(c.status==="lost")continue;const bm=s.bonusBasis==="paid"?cashMonth(c):c.month;
+    const team_=c.owner&&c.owner!=="me";const genLeg=team_&&((c.status==="paid"&&c.gen!=null)?c.gen:isGen(c.owner));if(genLeg)continue;
+    if(bm===M&&(s.bonusPersonal||team_)){volAll+=sc(c);if(c.status==="paid")volPaid+=sc(c)}}
+  return {volAll,volPaid,proj:volAll*tierPct(volAll)/100,paid:volPaid*tierPct(volPaid)/100};
+}
+const bonusReceived=M=>M<CUR||(M===CUR&&now.getDate()>=14);
+function calc(M){
+  const s=set();const r={me:{paid:0,submitted:0,projected:0},ov:{paid:0,submitted:0,projected:0},volAll:0,volPaid:0,scMe:0,scTeam:0};
+  for(const c of cases){
+    const cm=cashMonth(c);
+    if(c.status==="lost")continue;
+    if(cm===M){const k=c.owner&&c.owner!=="me"?"ov":"me";r[k][c.status]+=inc(c);if(k==="me")r.scMe+=sc(c);else r.scTeam+=sc(c)}
+  }
+  r.earn=earned(M);r.prev=earned(addM(M,-1));r.bonusRecv=bonusReceived(M);r.bonusProj=r.prev.proj;r.bonusPaid=r.bonusRecv?r.prev.paid:0;r.volAll=r.earn.volAll;
+  const sum=o=>o.paid+o.submitted+o.projected;
+  r.totalProj=sum(r.me)+sum(r.ov)+r.bonusProj;r.totalPaid=r.me.paid+r.ov.paid+r.bonusPaid;
+  r.totalSub=r.me.submitted+r.ov.submitted;r.totalPlan=r.me.projected+r.ov.projected;
+  return r;
+}
+
+function tabs(){
+  $("#who").textContent=(set().name?set().name+" · ":"")+"personal and team cashflow";
+  const past=[...new Set([...cases.map(c=>cashMonth(c)),...cases.map(c=>c.month),...Object.keys(months),...recruits.map(r=>r.month)])].filter(m=>m&&m<CUR).sort().reverse();
+  const opts=past.map(m=>`<option value="${m}" ${m===view?"selected":""}>${lbl(m)}${months[m]?.closed?" · closed":""}</option>`).join("");
+  $("#tabs").innerHTML=(past.length?`<select id="hist" aria-label="Past months"><option value="">History</option>${opts}</select>`:"")+
+  [CUR,addM(CUR,1)].map((m,i)=>`<button class="tab ${m===view?"on":""}" data-view="${m}">${lbl(m)}<small>${i?"next month":"current month"}</small></button>`).join("")+
+  `<button class="tab ${view.startsWith("year:")?"on":""}" data-view="year:${CUR.slice(0,4)}">${CUR.slice(0,4)}<small>full year</small></button>`+
+  `<button class="tab" id="openHelp">How to use<small>guide</small></button>`+
+  `<button class="tab" id="openSet" aria-expanded="${$("#settings").classList.contains("open")}">Settings<small>${set().base}% base</small></button>`;
+}
+
+function monthOpts(sel,from){let o="";for(let i=-2;i<=3;i++){const m=addM(from,i);o+=`<option value="${m}" ${m===sel?"selected":""}>${shortL(m)} ${m.slice(2,4)}</option>`}return o}
+
+function caseRows(list,isTeam){
+  return list.map(c=>{
+    const cm=cashMonth(c);const moved=c.month!==cm;
+    return `<tr data-id="${c.id}" class="${c.status==="lost"?"lost":""}">
+    ${isTeam?`<td><select data-f="owner">${[...team].sort((a,b)=>byName(a,b,"name")).map(t=>`<option value="${t.id}" ${t.id===c.owner?"selected":""}>${esc(t.name)}</option>`).join("")}</select><span class="moved" style="color:var(--muted)">${chainName(c.owner)}</span></td>`:""}
+    <td><input data-f="client" value="${esc(c.client)}" aria-label="Client"></td>
+    <td><select data-f="product">${["WL","UL","INV"].map(p=>`<option ${p===c.product?"selected":""}>${p}</option>`).join("")}</select></td>
+    <td><input data-f="amount" type="number" step="25" value="${c.amount}" aria-label="${c.product==="INV"?"Deposit":"Monthly premium"}"></td>
+    <td>${c.product==="INV"?`<input data-f="rate" type="number" step="0.5" value="${c.rate??set().inv}" aria-label="Investment rate %" title="Investment %">`:`<input data-f="factor" type="number" step="0.01" value="${c.factor??(c.product==="WL"?set().wl:set().ul)}" aria-label="Sales credit factor" title="Premium × ${set().mult} × factor">`}</td>
+    <td class="r num">${fmt(sc(c))}</td>
+    ${isTeam?`<td class="r num">${rateOf(c)}%</td>`:""}
+    <td class="r num"><b>${fmt(inc(c))}</b></td>
+    <td><select data-f="status" class="st st-${c.status}">${["projected","submitted","paid","lost"].map(s=>`<option ${s===c.status?"selected":""}>${s}</option>`).join("")}</select></td>
+    <td><select data-f="month" aria-label="Sale month">${monthOpts(c.month,c.month)}</select></td>
+    <td><select data-f="payMonth" aria-label="Pay month">${monthOpts(c.payMonth||c.month,c.month)}</select>${moved?`<span class="moved">${cm>c.month?"carried forward":"moved"} to ${shortL(cm)}</span>`:""}</td>
+    <td><button class="ghost" data-del="${c.id}" aria-label="Delete">✕</button></td></tr>`}).join("");
+}
+
+function addForm(isTeam){
+  return `<div class="add" data-add="${isTeam?"team":"me"}">
+  ${isTeam?`<label>Advisor<select name="owner">${[...team].sort((a,b)=>byName(a,b,"name")).map(t=>`<option value="${t.id}">${esc(t.name)} (${t.level}%, ${chainName(t.id)})</option>`).join("")}</select></label>`:""}
+  <label>Client<input name="client" placeholder="Client name"></label>
+  <label>Product<select name="product"><option>UL</option><option>WL</option><option>INV</option></select></label>
+  <label>Monthly premium / deposit<input name="amount" type="number" step="25" placeholder="300"></label>
+  <label>Status<select name="status"><option>projected</option><option>submitted</option><option>paid</option></select></label>
+  <label>&nbsp;<button class="pri" data-addbtn>Add case</button></label></div>`;
+}
+
+function trend(){
+  const ms=[];for(let i=-4;i<=1;i++)ms.push(addM(CUR,i));
+  const data=ms.map(m=>({m,...calc(m)}));const max=Math.max(1,...data.map(d=>Math.max(d.totalProj,months[d.m]?.snapshot?.projected||0)));
+  const W=640,H=180,bw=60,gap=(W-ms.length*bw)/(ms.length+1);
+  let g="";data.forEach((d,i)=>{
+    const x=gap+i*(bw+gap);const hP=d.totalProj/max*(H-40);const hA=d.totalPaid/max*(H-40);
+    const snap=months[d.m]?.snapshot?.projected;
+    g+=`<rect x="${x}" y="${H-20-hP}" width="${bw}" height="${hP}" rx="4" fill="var(--proj-bg)"/>`;
+    g+=`<rect x="${x}" y="${H-20-hA}" width="${bw}" height="${hA}" rx="4" fill="var(--paid)"/>`;
+    if(snap){const ys=H-20-snap/max*(H-40);g+=`<line x1="${x-4}" x2="${x+bw+4}" y1="${ys}" y2="${ys}" stroke="var(--gold)" stroke-width="2" stroke-dasharray="4 3"/>`}
+    g+=`<text x="${x+bw/2}" y="${H-4}" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">${shortL(d.m)}</text>`;
+    g+=`<text x="${x+bw/2}" y="${H-24-Math.max(hP,hA)}" text-anchor="middle" font-size="11" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">${d.totalProj?"$"+Math.round(d.totalProj/1000)+"k":""}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Paid versus projected cashflow, last four months and next month">${g}</svg>
+  <div class="legend"><span><i class="dot" style="background:var(--paid)"></i>Paid</span><span><i class="dot" style="background:var(--proj-bg);border:1px solid var(--line)"></i>Projected (all statuses)</span><span><i class="dot" style="background:var(--gold)"></i>Projection at month close</span></div>`;
+}
+
+function render(){
+  tabs();
+  if(!db){$("#app").innerHTML=`<p class="msg">Your data is stored with your claude.ai account. Open this page while signed in to load it.</p>`;return}
+  if(view.startsWith("year:")){renderYear(view.slice(5));return}
+  const M=view,r=calc(M),s=set(),closed=months[M]?.closed;
+  const welcome=!s.name?`<div class="welcome"><b>Welcome.</b> Start in <b>Settings</b>: enter your name and your contract level %. Then add your clients below. Open <b>How to use</b> anytime for the full guide.</div>`:"";
+  const mine=cases.filter(c=>(!c.owner||c.owner==="me")&&(cashMonth(c)===M||c.month===M)).sort(byName);
+  const tm=cases.filter(c=>c.owner&&c.owner!=="me"&&(cashMonth(c)===M||c.month===M)).sort((a,b)=>String(member(a.owner)?.name||"").localeCompare(String(member(b.owner)?.name||""),"en",{sensitivity:"base"})||byName(a,b));
+  const live=cases.filter(c=>c.status!=="lost");const out=live.filter(c=>c.month===M&&cashMonth(c)>M),inn=live.filter(c=>cashMonth(c)===M&&c.month<M);
+  const pct=v=>r.totalProj?v/r.totalProj*100:0;
+  const recM=recruits.filter(x=>x.month===M).sort((a,b)=>byName(a,b,"name"));
+  const licM=recruits.filter(x=>x.licensedMonth===M).length,prodM=recruits.filter(x=>x.producingMonth===M).length;
+  const pipe=recruits.filter(x=>(x.month||"")<=M&&!(x.teamId&&x.producingMonth&&x.producingMonth<M)).sort((a,b)=>byName(a,b,"name"));const goal=months[M]?.recruitGoal??"";
+  const sumInc=l=>l.filter(c=>c.status!=="lost"&&cashMonth(c)===M).reduce((a,c)=>a+inc(c),0);
+  $("#app").innerHTML=`${welcome}
+  <div class="hero">
+    <div>
+      <div class="big-l">${lbl(M)} · paid so far${closed?" · month closed":""}</div>
+      <div class="big num">${fmt(r.totalPaid)}</div>
+      <div class="vs">of <b class="num">${fmt(r.totalProj)}</b> projected cashflow${months[M]?.snapshot?` · projection at close was <b class="num">${fmt(months[M].snapshot.projected)}</b>`:""}</div>
+      <div class="bar" aria-hidden="true"><i style="width:${pct(r.totalPaid)}%;background:var(--paid)"></i><i style="width:${pct(r.totalSub)}%;background:var(--sub)"></i><i style="width:${pct(r.totalPlan+r.bonusProj-r.bonusPaid)}%;background:var(--proj)"></i></div>
+      <div class="legend"><span><i class="dot" style="background:var(--paid)"></i>Paid ${fmt(r.totalPaid)}</span><span><i class="dot" style="background:var(--sub)"></i>Submitted ${fmt(r.totalSub)}</span><span><i class="dot" style="background:var(--proj)"></i>Projected ${fmt(r.totalPlan)}${r.bonusProj-r.bonusPaid>0?" + bonus "+fmt(r.bonusProj-r.bonusPaid):""}</span></div>
+      ${M<=CUR&&!closed?`<div style="margin-top:14px"><button data-close="${M}">Close ${lbl(M)}</button> <span class="hint">Locks the projection for comparison and moves anything unpaid to ${shortL(addM(M,1))}.</span></div>`:""}
+      ${closed?`<div class="closed-note">Closed ${esc(months[M].closedAt||"")}. Late payments still update the actuals.</div>`:""}
+    </div>
+    <div class="streams">
+      ${[["Personal",r.me,`${s.base}% of ${fmt(r.scMe)} sales credit`],["Overrides",r.ov,`spread on ${fmt(r.scTeam)} team sales credit`]].map(([n,o,p])=>`
+      <div class="stream"><span>${n}</span><span class="num n">${fmt(o.paid)}</span><span class="num hint">of ${fmt(o.paid+o.submitted+o.projected)}</span><span class="p">${p}</span></div>`).join("")}
+      <div class="stream"><span>Bonus</span><span class="num n">${fmt(r.bonusPaid)}</span><span class="num hint">of ${fmt(r.bonusProj)}</span><span class="p">earned in ${shortL(addM(M,-1))}, ${r.bonusRecv?"received":"expected"} 2nd week of ${shortL(M)}${s.tiersConfirmed?"":` · <span class="warn">tiers not confirmed</span>`}</span></div>
+      <div class="stream"><span>Recruiting and licensing</span><span class="num n">${recM.length}</span><span class="num hint">${goal?"goal "+goal:"no goal set"}</span><span class="p">new recruits · ${licM} licensed · ${prodM} started producing this month</span></div>
+    </div>
+  </div>
+  ${out.length||inn.length?`<div class="carry">${inn.length?`<span class="chip in">Carried in: ${inn.length} case${inn.length>1?"s":""} · ${fmt(inn.reduce((a,c)=>a+inc(c),0))}</span>`:""}${out.length?`<span class="chip">Carried forward: ${out.length} case${out.length>1?"s":""} · ${fmt(out.reduce((a,c)=>a+inc(c),0))} moved out of ${shortL(M)}</span>`:""}</div>`:""}
+
+  <section><div class="sh"><h2>Personal production</h2><span class="hint">Income counts in the pay month. Submitted cases not paid by month end move forward automatically.</span></div>
+  <div class="tw"><table><thead><tr><th>Client</th><th>Product</th><th>Premium / deposit</th><th>Factor / inv %</th><th class="r">Sales credit</th><th class="r">Your income</th><th>Status</th><th>Sold</th><th>Pays</th><th></th></tr></thead>
+  <tbody>${caseRows(mine,false)||`<tr><td colspan="10" class="hint">No personal cases in ${lbl(M)} yet.</td></tr>`}</tbody>
+  <tfoot><tr><td colspan="4">Cashflow in ${shortL(M)}</td><td class="r num">${fmt(r.scMe)}</td><td class="r num">${fmt(sumInc(mine))}</td><td colspan="4"></td></tr></tfoot></table></div>
+  ${addForm(false)}</section>
+
+  <section><div class="sh"><h2>Team production and overrides</h2><span class="hint">Override = your ${s.base}% minus the highest level below you. Legs at your level pay generational overrides.</span></div>
+  ${team.length?`<div class="tw"><table><thead><tr><th>Advisor</th><th>Client</th><th>Product</th><th>Premium / deposit</th><th>Factor / inv %</th><th class="r">Sales credit</th><th class="r">Spread</th><th class="r">Override</th><th>Status</th><th>Sold</th><th>Pays</th><th></th></tr></thead>
+  <tbody>${caseRows(tm,true)||`<tr><td colspan="12" class="hint">No team cases in ${lbl(M)} yet.</td></tr>`}</tbody>
+  <tfoot><tr><td colspan="5">Override cashflow in ${shortL(M)}</td><td class="r num">${fmt(r.scTeam)}</td><td></td><td class="r num">${fmt(sumInc(tm))}</td><td colspan="4"></td></tr></tfoot></table></div>${addForm(true)}`:""}
+  </section>
+  <section><div class="sh"><h2>Your team</h2><span class="hint">Add or edit anyone here. Set who they report to and the overrides calculate automatically.</span></div>${teamSummary(M)}</section>
+
+  <div class="grid2">
+  <section><div class="sh"><h2>Bonus</h2><span class="hint">Pays 2nd week of the following month · volume by ${s.bonusBasis==="paid"?"pay month":"sale month"}${s.bonusPersonal?", you plus team":", team only"}, generational legs excluded</span></div>
+    <div class="kv num" style="margin-bottom:14px"><span>Received in ${shortL(M)} (earned in ${shortL(addM(M,-1))})</span><span><b>${fmt(r.bonusPaid)}</b>${r.bonusRecv?"":` <span class="hint">expected ${fmt(r.bonusProj)}</span>`}</span></div>
+    <div class="hint" style="margin-bottom:4px">Building in ${shortL(M)} · pays in ${shortL(addM(M,1))}</div>
+    ${s.tiers.length?"":`<p class="hint">No bonus tiers yet. Add yours in Settings.</p>`}<div class="tiers">${[...s.tiers].sort((a,b)=>a.min-b.min).map(t=>`<span class="tier ${r.earn.volAll>=t.min?"hit":""}">${fmt(t.min)}+ → ${t.pct}%</span>`).join("")}</div>
+    <div class="kv num"><span>Projected volume</span><span>${fmt(r.earn.volAll)}</span><span>Projected bonus</span><span>${fmt(r.earn.proj)}</span><span>Paid volume so far</span><span>${fmt(r.earn.volPaid)}</span><span>Bonus locked in on paid</span><span><b>${fmt(r.earn.paid)}</b></span>
+    ${(()=>{const nt=[...s.tiers].sort((a,b)=>a.min-b.min).find(t=>t.min>r.earn.volAll);return nt?`<span>To next tier</span><span class="warn">${fmt(nt.min-r.earn.volAll)} more</span>`:""})()}</div>
+  </section>
+  <section><div class="sh"><h2>Cashflow trend</h2></div><div class="trend">${trend()}</div></section>
+  </div>
+
+  <section><div class="sh"><h2>Recruiting and licensing</h2><span class="hint">New recruits goal for ${shortL(M)} <input id="rgoal" type="number" min="0" step="1" value="${goal}" style="width:70px"></span></div>
+  <div class="carry" style="border:0;padding-top:0"><span class="chip">${recM.length} recruited</span><span class="chip in">${licM} licensed</span><span class="chip in">${prodM} started producing</span><span class="hint" style="align-self:center">in ${lbl(M)}</span></div>
+  <div class="board">${GROUPS.map(([g,sts])=>{const list=pipe.filter(x=>sts.includes(x.stage));return `<div class="col"><div class="colh"><span>${g}</span><span class="num">${list.length}</span></div>${list.map(x=>recCard(x,M)).join("")||'<p class="hint" style="margin:4px 2px">Nobody here</p>'}</div>`}).join("")}</div>
+  <div class="add"><label>New recruit<input id="rname" placeholder="Name"></label><label>Stage<select id="rstage">${STAGES.map(st=>`<option value="${st}" ${st==="signed"?"selected":""}>${STAGE_L[st]}</option>`).join("")}</select></label><label>Country<select id="rcountry"><option>Canada</option><option>USA</option></select></label><label>&nbsp;<button class="pri" id="radd">Add recruit</button></label></div>
+  <p class="hint">Recruits stay on the board until they start producing. Once you add them to your team, they move to the Your team section.</p></section>
+
+  <section><button id="export">Export all cases (CSV)</button> <button id="backup">Save backup</button>
+  <p class="hint">Your data is saved to your Claude account and syncs across your devices. A monthly backup is still a good habit.</p></section>`;
+}
+
+
+function recCard(x,M){
+  const tags=[`recruited ${shortL(x.month)}`];if(x.licensedMonth)tags.push(`licensed ${shortL(x.licensedMonth)}`);if(x.producingMonth)tags.push(`producing ${shortL(x.producingMonth)}`);
+  const stage=x.stage==="licensing"?"studying":x.stage;
+  return `<div class="rc" data-rid="${x.id}"><div class="top"><input data-rf="name" value="${esc(x.name)}" aria-label="Name"><button class="ghost" data-rdel="${x.id}" aria-label="Delete">✕</button></div>
+   <div class="top"><select data-rf="stage" aria-label="Stage">${STAGES.map(st=>`<option value="${st}" ${st===stage?"selected":""}>${STAGE_L[st]}</option>`).join("")}</select><select data-rf="country" aria-label="Country"><option ${x.country!=="USA"?"selected":""}>Canada</option><option ${x.country==="USA"?"selected":""}>USA</option></select></div>
+   <span class="flag">${tags.join(" · ")}${x.country==="USA"?" · USA":""}</span>
+   <input data-rf="note" value="${esc(x.note||"")}" placeholder="Note">
+   ${stage==="producing"?(x.teamId&&member(x.teamId)?`<span class="flag" style="color:var(--paid)">On your team</span>`:`<div class="top"><input type="number" id="lv-${x.id}" value="26" step="1" aria-label="Contract level %" style="width:70px"><button class="pri" data-toteam="${x.id}">Add to my team at this %</button></div>`):""}</div>`;
+}
+function teamSummary(M){
+  const kids={};team.forEach(t=>{const u=(t.upline&&t.upline!=="me"&&member(t.upline))?t.upline:"me";(kids[u]=kids[u]||[]).push(t)});
+  const order=[];const walk=(u,d,seen)=>{(kids[u]||[]).sort((a,b)=>byName(a,b,"name")).forEach(t=>{if(seen.has(t.id))return;seen.add(t.id);order.push([t,d]);walk(t.id,d+1,seen)})};walk("me",0,new Set());
+  team.forEach(t=>{if(!order.some(o=>o[0].id===t.id))order.push([t,0])});
+  const stats=id=>{const cs=cases.filter(c=>c.owner===id&&c.status!=="lost"&&cashMonth(c)===M);return{n:cs.length,sc:cs.reduce((a,c)=>a+sc(c),0),scP:cs.filter(c=>c.status==="paid").reduce((a,c)=>a+sc(c),0),ov:cs.reduce((a,c)=>a+inc(c),0),ovP:cs.filter(c=>c.status==="paid").reduce((a,c)=>a+inc(c),0)}};
+  const grp=id=>{let ids=[id],q=[id];while(q.length){const x=q.shift();(kids[x]||[]).forEach(k=>{if(!ids.includes(k.id)){ids.push(k.id);q.push(k.id)}})}return ids.reduce((a,x)=>a+stats(x).sc,0)};
+  const upOpts=t=>`<option value="me">Direct to me</option>${team.filter(o=>o.id!==t.id).sort((a,b)=>byName(a,b,"name")).map(o=>`<option value="${o.id}" ${t.upline===o.id?"selected":""}>Under ${esc(o.name)}</option>`).join("")}`;
+  const rows=order.map(([t,d])=>{const st=stats(t.id);const gl=genLabel(t.id);
+    return `<tr><td><div style="display:flex;align-items:center;gap:6px;padding-left:${d*22}px">${d?'<span class="hint" aria-hidden="true">└</span>':""}<input data-tm="${t.id}" data-k="name" value="${esc(t.name)}" aria-label="Name"></div></td>
+    <td><input data-tm="${t.id}" data-k="level" type="number" step="1" min="0" value="${t.level}" aria-label="Level %" style="width:70px"></td>
+    <td><select data-tm="${t.id}" data-k="upline" aria-label="Reports to">${upOpts(t)}</select></td>
+    <td class="r num">${spreadFor(t.id)}%${gl?`<span class="moved">${gl} · no bonus</span>`:""}</td>
+    <td class="r num">${st.n}</td><td class="r num">${fmt(st.sc)}</td><td class="r num">${fmt(grp(t.id))}</td>
+    <td class="r num"><b>${fmt(st.ovP)}</b> <span class="hint">of ${fmt(st.ov)}</span></td>
+    <td><button class="ghost" data-tdel="${t.id}" aria-label="Remove advisor">✕</button></td></tr>`}).join("");
+  return `<div class="tw"><table><thead><tr><th style="width:24%">Advisor</th><th>Level %</th><th>Reports to</th><th class="r">Your override</th><th class="r">Cases</th><th class="r">Personal SC</th><th class="r">Group SC</th><th class="r">Override paid</th><th></th></tr></thead>
+  <tbody>${rows||`<tr><td colspan="9" class="hint">No advisors yet. Add your first one below.</td></tr>`}</tbody></table></div>
+  <div class="add"><label>Name<input id="tname" placeholder="Advisor name"></label><label>Level %<input id="tlevel" type="number" step="1" value="36"></label>
+  <label>Reports to<select id="tup"><option value="me">Direct to me</option>${[...team].sort((a,b)=>byName(a,b,"name")).map(o=>`<option value="${o.id}">Under ${esc(o.name)}</option>`).join("")}</select></label>
+  <label>&nbsp;<button class="pri" id="tadd">Add advisor</button></label></div>
+  <p class="hint">Figures for ${lbl(M)}. Group SC includes everyone under that advisor. Promotions update open cases only; paid cases keep the override they were paid at.</p>`;
+}
+function renderYear(Y){
+  const years=[...new Set([CUR.slice(0,4),...cases.map(c=>(c.payMonth||c.month||"").slice(0,4)),...Object.keys(months).map(m=>m.slice(0,4))])].filter(Boolean).sort();
+  const rows=[];for(let i=1;i<=12;i++){const m=Y+"-"+pad(i);const r=calc(m);const snap=months[m]?.snapshot;const rec=recruits.filter(x=>x.month===m).length,lic=recruits.filter(x=>x.licensedMonth===m).length,prod=recruits.filter(x=>x.producingMonth===m).length;
+    rows.push({m,r,snap,rec,lic,prod,past:m<CUR,cur:m===CUR,closed:months[m]?.closed})}
+  const done=rows.filter(x=>x.past||x.cur);
+  const ytd=k=>done.reduce((a,x)=>a+k(x.r),0);
+  const ytdPaid=ytd(r=>r.totalPaid),ytdMe=ytd(r=>r.me.paid),ytdOv=ytd(r=>r.ov.paid),ytdB=ytd(r=>r.bonusPaid);
+  const ytdRec=done.reduce((a,x)=>a+x.rec,0),ytdLic=done.reduce((a,x)=>a+x.lic,0),ytdProd=done.reduce((a,x)=>a+x.prod,0);
+  const active=rows.filter(x=>x.past&&x.r.totalPaid>0);
+  const avg=active.length?active.reduce((a,x)=>a+x.r.totalPaid,0)/active.length:0;
+  const last3=rows.filter(x=>x.past).slice(-3);const run=last3.length?last3.reduce((a,x)=>a+x.r.totalPaid,0)/last3.length:0;
+  const pipeline=rows.filter(x=>!x.past).reduce((a,x)=>a+(x.r.totalProj-x.r.totalPaid),0);
+  const best=[...active].sort((a,b)=>b.r.totalPaid-a.r.totalPaid)[0];
+  const maxV=Math.max(1,...rows.map(x=>Math.max(x.r.totalProj,x.snap?.projected||0)));
+  const W=680,H=170,bw=38,gap=(W-12*bw)/13;let g="";
+  rows.forEach((x,i)=>{const X=gap+i*(bw+gap);const hp=x.r.totalProj/maxV*(H-36),ha=x.r.totalPaid/maxV*(H-36);
+    g+=`<rect x="${X}" y="${H-18-hp}" width="${bw}" height="${hp}" rx="3" fill="var(--proj-bg)"/><rect x="${X}" y="${H-18-ha}" width="${bw}" height="${ha}" rx="3" fill="var(--paid)"/>`;
+    if(x.snap){const ys=H-18-x.snap.projected/maxV*(H-36);g+=`<line x1="${X-3}" x2="${X+bw+3}" y1="${ys}" y2="${ys}" stroke="var(--gold)" stroke-width="2" stroke-dasharray="4 3"/>`}
+    g+=`<text x="${X+bw/2}" y="${H-3}" text-anchor="middle" font-size="11" fill="${x.cur?"var(--ink)":"var(--muted)"}" font-family="IBM Plex Sans,sans-serif">${MN[i]}</text>`});
+  const tr=rows.map(x=>{const v=x.snap?x.r.totalPaid-x.snap.projected:null;
+    return `<tr${x.cur?' style="background:var(--gold-soft)"':""}><td><button class="ghost" style="color:var(--navy);padding:0" data-view="${x.m}">${lbl(x.m)}</button>${x.closed?' <span class="hint">closed</span>':x.cur?' <span class="hint">open</span>':""}</td>
+    <td class="r num">${fmt(x.r.me.paid)}</td><td class="r num">${fmt(x.r.ov.paid)}</td><td class="r num">${fmt(x.r.bonusPaid)}</td><td class="r num"><b>${fmt(x.r.totalPaid)}</b></td>
+    <td class="r num">${x.past||x.cur?(x.snap?fmt(x.snap.projected):"—"):fmt(x.r.totalProj)}</td>
+    <td class="r num" style="color:${v==null?"var(--muted)":v<0?"var(--danger)":"var(--paid)"}">${v==null?"—":(v>=0?"+":"")+fmt(v)}</td><td class="r num">${x.rec||x.lic||x.prod?`${x.rec} / ${x.lic} / ${x.prod}`:""}</td></tr>`}).join("");
+  $("#app").innerHTML=`
+  <div class="hero">
+    <div><div class="big-l">${Y} · paid year to date</div><div class="big num">${fmt(ytdPaid)}</div>
+      <div class="vs">Personal <b class="num">${fmt(ytdMe)}</b> · Overrides <b class="num">${fmt(ytdOv)}</b> · Bonus <b class="num">${fmt(ytdB)}</b></div>
+      ${years.length>1?`<div style="margin-top:12px"><select id="yearSel" aria-label="Year">${years.map(y=>`<option ${y===Y?"selected":""}>${y}</option>`).join("")}</select></div>`:""}</div>
+    <div class="streams">
+      <div class="stream"><span>Average paid month</span><span class="num n">${fmt(avg)}</span><span></span><span class="p">across ${active.length} past month${active.length===1?"":"s"} with income</span></div>
+      <div class="stream"><span>3-month run-rate</span><span class="num n">${fmt(run)}</span><span class="num hint">${fmt(run*12)} / yr</span><span class="p">average of the last three finished months</span></div>
+      <div class="stream"><span>Open pipeline</span><span class="num n">${fmt(pipeline)}</span><span></span><span class="p">submitted and projected, not yet paid</span></div>
+      <div class="stream"><span>Recruits YTD</span><span class="num n">${ytdRec}</span><span class="num hint">${best?"best month "+shortL(best.m):""}</span><span class="p">${ytdLic} licensed · ${ytdProd} started producing${best?` · best month paid ${fmt(best.r.totalPaid)}`:""}</span></div>
+    </div>
+  </div>
+  <section><div class="sh"><h2>${Y} month by month</h2><span class="hint">Click a month to open it.</span></div>
+   <div class="trend"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Paid versus projected cashflow by month">${g}</svg>
+   <div class="legend"><span><i class="dot" style="background:var(--paid)"></i>Paid</span><span><i class="dot" style="background:var(--proj-bg);border:1px solid var(--line)"></i>Projected</span><span><i class="dot" style="background:var(--gold)"></i>Projection at close</span></div></div>
+   <div class="tw" style="margin-top:16px"><table><thead><tr><th>Month</th><th class="r">Personal paid</th><th class="r">Overrides paid</th><th class="r">Bonus paid</th><th class="r">Total paid</th><th class="r">Projected</th><th class="r">vs projection</th><th class="r">Recruited / licensed / producing</th></tr></thead>
+   <tbody>${tr}</tbody><tfoot><tr><td>Year to date</td><td class="r num">${fmt(ytdMe)}</td><td class="r num">${fmt(ytdOv)}</td><td class="r num">${fmt(ytdB)}</td><td class="r num">${fmt(ytdPaid)}</td><td></td><td></td><td class="r num">${ytdRec} / ${ytdLic} / ${ytdProd}</td></tr></tfoot></table></div>
+  </section>
+  <section><button id="export">Export all cases (CSV)</button></section>`;
+}
+
+
+function renderHelp(){$("#help").innerHTML=`<div class="sh"><h2>How to use</h2><button id="closeHelp">Close</button></div>
+<h3>First time</h3><ol><li>Open <b>Settings</b>. Enter your name and your contract level % (for example 36 or 51).</li><li>If you know your bonus tiers, add them in Settings. If not, leave them empty.</li><li>If you have people on your team, add them in <b>Your team</b> with their level and who they report to.</li></ol>
+<h3>Every case</h3><ol><li>Add the client under <b>Personal production</b>: product, monthly premium (or deposit for investments), and status.</li><li><b>Projected</b> = you expect to write it. <b>Submitted</b> = application is in. <b>Paid</b> = the money arrived. <b>Lost</b> = it won't happen.</li><li><b>Sold</b> is the month you wrote it. <b>Pays</b> is the month the money lands. If it pays next month, change Pays and the income moves automatically.</li><li>Each row has its own factor (UL and WL) or rate (investments). Change it if a client's product credits differently.</li></ol>
+<h3>What the numbers mean</h3><ul><li>The big number is what is actually <b>paid</b> this month. Below it, the projection for the whole month.</li><li>Only paid cases count as real income. Bonuses arrive in the 2nd week of the following month.</li><li>Anything not paid by month end moves to next month on its own. Mark dead cases as lost so they stop counting.</li></ul>
+<h3>End of the month</h3><ol><li>Update every case status.</li><li>Click <b>Close month</b>. This locks your projection so you can compare it with what actually paid.</li><li>Click <b>Save backup</b> and keep the file somewhere safe (email it to yourself or put it in Drive).</li></ol>
+<h3>Important</h3><ul><li>Your data is saved to your Claude account. Phone and computer stay in sync as long as you are signed in to claude.ai.</li><li>Your Claude can update it for you: tell it things like "Smith family UL $300 submitted" or "close October".</li><li>Always open it from its claude.ai link or your home-screen icon, never from a downloaded file.</li></ul>`}
+function renderSettings(){
+  const s=set();
+  $("#settings").innerHTML=`<div class="sh"><h2>Settings</h2><button id="closeSet">Done</button></div>
+  <h3>You</h3><div class="srow"><label>Your name<input data-s="name" type="text" value="${esc(s.name)}" placeholder="Your name"></label><label>Your base %<input data-s="base" type="number" step="1" value="${s.base}"></label></div>
+  <h3>Sales credit factors</h3><p class="hint" style="margin:0 0 8px">Defaults for new cases. Each case keeps its own factor, editable in its row.</p><div class="srow">
+   <label>Months per year<input data-s="mult" type="number" value="${s.mult}"></label>
+   <label>Default Whole Life factor<input data-s="wl" type="number" step="0.01" value="${s.wl}"></label>
+   <label>Default Universal Life factor<input data-s="ul" type="number" step="0.01" value="${s.ul}"></label>
+   <label>Default investment %<input data-s="inv" type="number" step="0.5" value="${s.inv}"></label></div>
+  <h3>Bonus tiers</h3><div class="srow">${s.tiers.map((t,i)=>`<label>Tier ${i+1} from $<input data-tier="${i}" data-k="min" type="number" step="1000" value="${t.min}"></label><label>Tier ${i+1} %<input data-tier="${i}" data-k="pct" type="number" step="0.25" value="${t.pct}"></label>`).join("")}</div>
+   <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button id="addTier">Add tier</button><button id="rmTier">Remove last tier</button>
+   <label class="hint"><input type="checkbox" id="tconf" ${s.tiersConfirmed?"checked":""}> These are my real tiers</label></div>
+   <div class="srow" style="margin-top:10px"><label>Bonus volume counts by<select data-s="bonusBasis"><option value="paid" ${s.bonusBasis==="paid"?"selected":""}>Pay month</option><option value="submitted" ${s.bonusBasis==="submitted"?"selected":""}>Sale month</option></select></label>
+   <label>Bonus volume includes<select data-s="bonusPersonal"><option value="true" ${s.bonusPersonal?"selected":""}>Personal plus team</option><option value="false" ${!s.bonusPersonal?"selected":""}>Team only</option></select></label></div>
+  <h3>Generational overrides</h3><p class="hint" style="margin:0 0 8px">Paid on legs where someone has reached your level. Life and mutual funds use the same rates.</p>
+  <div class="srow">${s.gens.map((g,i)=>`<label>${ORD[i]} generation %<input data-gen="${i}" type="number" step="0.5" value="${g}"></label>`).join("")}</div>
+  <p class="hint">Advisors and who they report to are managed in the Your team section on the main page.</p>`;
+}
+
+async function w(path,data,merge=true){if(!canWrite)return;try{const ref=db.doc(path);merge?await ref.set({...((await ref.get()).data()||{}),...data}):await ref.set(data)}catch(e){if(e.code==="invalid_argument"){canWrite=false;alert("This view is read-only.")}else console.error(e)}}
+async function upd(path,data){try{await db.doc(path).update(data)}catch(e){console.error(e)}}
+const saveS=patch=>{S={...set(),...patch};render();renderSettings();return w("config/settings",patch)};
+
+document.addEventListener("click",async e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.view){view=t.dataset.view;render()}
+  else if(t.id==="openSet"){$("#settings").classList.toggle("open");renderSettings();tabs()}
+  else if(t.id==="openHelp"){$("#help").classList.toggle("open");renderHelp()}
+  else if(t.id==="closeHelp"){$("#help").classList.remove("open")}
+  else if(t.id==="backup"){const data=JSON.stringify({app:"production-dashboard",version:1,savedAt:new Date().toISOString(),config:{settings:S},cases,team,recruits,months},null,1);await saveFile("dashboard-backup-"+CUR+".json",data,"application/json")}
+  else if(t.id==="closeSet"){$("#settings").classList.remove("open");tabs()}
+  else if(t.dataset.del){if(ask("Delete this case?"))await db.doc("cases/"+t.dataset.del).delete()}
+  else if(t.dataset.rdel){if(ask("Delete this recruit?"))await db.doc("recruits/"+t.dataset.rdel).delete()}
+  else if(t.hasAttribute("data-addbtn")){
+    const box=t.closest("[data-add]");const g=n=>box.querySelector(`[name=${n}]`)?.value;
+    const amt=+g("amount");if(!g("client")||!amt){alert("Enter a client and an amount.");return}
+    const owner=box.dataset.add==="team"?g("owner"):"me";const c={client:g("client").trim(),product:g("product"),amount:amt,status:g("status"),month:view,payMonth:view,owner};
+    if(owner!=="me"&&c.status==="paid"){c.ovr=spreadFor(owner);c.gen=isGen(owner)}if(c.product==="INV")c.rate=set().inv;else c.factor=c.product==="WL"?set().wl:set().ul;
+    await db.collection("cases").add(c);
+  }
+  else if(t.id==="radd"){const n=$("#rname").value.trim();if(!n){alert("Enter a name.");return}const st=$("#rstage").value,m=view.startsWith("year:")?CUR:view;const d={name:n,month:m,stage:st,country:$("#rcountry").value};if(["licensed","producing"].includes(st))d.licensedMonth=m;if(st==="producing")d.producingMonth=m;await db.collection("recruits").add(d)}
+  else if(t.dataset.toteam){const x=recruits.find(r=>r.id===t.dataset.toteam);if(!x)return;const lv=document.getElementById("lv-"+x.id)?.value||"26";const ref=await db.collection("team").add({name:x.name,level:+lv||0,upline:"me",active:true});await upd("recruits/"+x.id,{teamId:ref.id});}
+  else if(t.dataset.close){
+    const M=t.dataset.close,r=calc(M);if(!ask(`Close ${lbl(M)}? Unpaid cases move to ${lbl(addM(M,1))}.`))return;
+    for(const c of cases.filter(c=>c.status!=="paid"&&c.status!=="lost"&&cashMonth(c)===M))await upd("cases/"+c.id,{payMonth:addM(M,1)});
+    await w("months/"+M,{closed:true,closedAt:new Date().toLocaleDateString("en-CA"),snapshot:{projected:Math.round(r.totalProj),paid:Math.round(r.totalPaid),personal:Math.round(r.me.paid),override:Math.round(r.ov.paid),bonus:Math.round(r.bonusPaid)}});
+  }
+  else if(t.id==="tadd"){const n=$("#tname").value.trim();if(!n){alert("Enter a name.");return}await db.collection("team").add({name:n,level:+$("#tlevel").value||0,upline:$("#tup").value,active:true});}
+  else if(t.dataset.tdel){if(cases.some(c=>c.owner===t.dataset.tdel)){alert("This advisor has cases. Delete or reassign them first.");return}if(team.some(x=>x.upline===t.dataset.tdel)){alert("Someone reports to this advisor. Move them first.");return}if(ask("Remove this advisor?"))await db.doc("team/"+t.dataset.tdel).delete()}
+  else if(t.id==="addTier"){const ts=[...set().tiers];ts.push({min:(ts.at(-1)?.min||0)+50000,pct:(ts.at(-1)?.pct||0)+1});saveS({tiers:ts})}
+  else if(t.id==="rmTier"){saveS({tiers:set().tiers.slice(0,-1)})}
+  else if(t.id==="export"){
+    const head="client,owner,product,amount,inv_rate,sales_credit,income,status,sale_month,pay_month\n";
+    const csv=head+cases.map(c=>[c.client,c.owner==="me"?"Julian":member(c.owner)?.name,c.product,c.amount,c.rate??"",Math.round(sc(c)),Math.round(inc(c)),c.status,c.month,cashMonth(c)].map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
+    await saveFile(`production-${CUR}.csv`,csv,"text/csv")
+  }
+});
+
+document.addEventListener("change",async e=>{
+  const el=e.target;
+  if(el.id==="restore"&&el.files&&el.files[0]){try{const d=JSON.parse(await el.files[0].text());if(!d||typeof d!=="object"||!("cases" in d))throw 0;if(!ask("Replace everything on this device with the backup?"))return;localDb.load(d)}catch(err){alert("That file isn't a valid backup.")}el.value="";return}
+  if(el.id==="hist"&&el.value){view=el.value;render();return}
+  if(el.id==="yearSel"){view="year:"+el.value;render();return}
+  if(el.id==="rgoal"){await w("months/"+view,{recruitGoal:+el.value||0});return}
+  if(el.id==="tconf"){saveS({tiersConfirmed:el.checked});return}
+  if(el.dataset.s){let v=el.value;v=el.type==="text"?v:v==="true"?true:v==="false"?false:isNaN(+v)?v:+v;saveS({[el.dataset.s]:v});return}
+  if(el.dataset.gen!==undefined){const gs=[...set().gens];gs[+el.dataset.gen]=+el.value||0;saveS({gens:gs});return}
+  if(el.dataset.tier!==undefined){const ts=set().tiers.map(x=>({...x}));ts[+el.dataset.tier][el.dataset.k]=+el.value||0;saveS({tiers:ts});return}
+  if(el.dataset.tm){const k=el.dataset.k;let v=k==="level"?(+el.value||0):el.value;if(k==="name"&&!v.trim())return;
+    if(k==="upline"){let u=member(v),seen=new Set();while(u&&!seen.has(u.id)){if(u.id===el.dataset.tm){alert("That would create a loop.");renderSettings();return}seen.add(u.id);u=member(u.upline)}}
+    await upd("team/"+el.dataset.tm,{[k]:v});return}
+  const row=el.closest("tr[data-id]");
+  if(row&&el.dataset.f){
+    const id=row.dataset.id,c=cases.find(x=>x.id===id),f=el.dataset.f;let v=el.value;
+    if(["amount","rate","factor"].includes(f))v=+v||0;
+    const patch={[f]:v};
+    if(f==="month"&&(!c.payMonth||c.payMonth<v))patch.payMonth=v;
+    if(f==="status"&&v==="paid"&&!c.payMonth)patch.payMonth=c.month;
+    if(f==="product"&&v==="INV"&&c.rate==null)patch.rate=set().inv;if(f==="product"&&v!=="INV")patch.factor=v==="WL"?set().wl:set().ul;
+    if(f==="status"&&v==="paid"&&c.owner&&c.owner!=="me"){patch.ovr=spreadFor(c.owner);patch.gen=isGen(c.owner)}
+    await upd("cases/"+id,patch);return;
+  }
+  const rc=el.closest("[data-rid]");
+  if(rc&&el.dataset.rf){const x=recruits.find(r=>r.id===rc.dataset.rid);const patch={[el.dataset.rf]:el.value};
+    if(el.dataset.rf==="stage"&&x){const m=view.startsWith("year:")?CUR:view;const v=el.value;
+      if(["licensed","producing"].includes(v)&&!x.licensedMonth)patch.licensedMonth=m;
+      if(v==="producing"&&!x.producingMonth)patch.producingMonth=m;
+      if(!["licensed","producing"].includes(v)&&x.licensedMonth)patch.licensedMonth=null;
+      if(v!=="producing"&&x.producingMonth)patch.producingMonth=null;}
+    await upd("recruits/"+rc.dataset.rid,patch)}
+});
+
+
+(async()=>{
+  render();
+  try{dl=await claude.use("downloads")}catch(e){}
+  try{db=await claude.use("db")}catch(e){db=null}
+  if(!db){render();return}
+  try{const u=await claude.use("user");if(u&&u.can&&u.can("data.write")===false)canWrite=false}catch(e){}
+  const listen=(path,fn)=>db.collection(path).onSnapshot(s=>{fn(s.docs.map(d=>({id:d.id,...d.data()})));render();if($("#settings").classList.contains("open"))renderSettings()},err=>console.error(path,err));
+  db.doc("config/settings").onSnapshot(d=>{S={...DEF,...(d.exists?d.data():{})};render();if($("#settings").classList.contains("open"))renderSettings()});
+  listen("cases",x=>cases=x);listen("team",x=>team=x);listen("recruits",x=>recruits=x);
+  listen("months",x=>{months={};x.forEach(m=>months[m.id]=m)});
+})();
+</script>
+</body>
+</html>
